@@ -37,23 +37,23 @@ public class NetworkUtils {
     public static final int POPULARITY = 0;
     public static final int TOP_RATED = 1;
 
+    //method for creating string of URL
     public static URL buildUrl(int sortBy, int page) {
-
         URL result = null;
+        String SORT_TYPE = "";
 
         //choose sort method
-        String sortMethod = "";
         if (sortBy == POPULARITY) {
-            sortMethod = SORT_BY_POPULARITY;
+            SORT_TYPE = SORT_BY_POPULARITY;
         } else if (sortBy == TOP_RATED){
-            sortMethod = SORT_BY_TOP_RATED;
+            SORT_TYPE = SORT_BY_TOP_RATED;
         }
 
         //create string of url with query
         Uri uri = Uri.parse(BASE_URL).buildUpon()
                 .appendQueryParameter(PARAMS_API_KEY, API_KEY)             // insert api_key params
-                .appendQueryParameter(PARAMS_LANGUAGE, LANGUAGE_VALUES)     // insert language values
-                .appendQueryParameter(PARAMS_SORT_BY, sortMethod)          // insert method of sort
+                .appendQueryParameter(PARAMS_LANGUAGE, LANGUAGE_VALUES)    // insert language values
+                .appendQueryParameter(PARAMS_SORT_BY, SORT_TYPE)           // insert method of sort
                 .appendQueryParameter(PARAMS_PAGE, Integer.toString(page)) // insert page
                 .build();
 
