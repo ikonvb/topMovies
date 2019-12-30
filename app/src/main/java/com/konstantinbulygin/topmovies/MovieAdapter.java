@@ -17,11 +17,22 @@ public class MovieAdapter extends RecyclerView.Adapter<MovieAdapter.MovieViewHol
 
     private ArrayList<Movie> movies;
     private OnPosterClickListener onPosterClickListener;
+    private OnReachEndListener onReachEndListener;
 
     public MovieAdapter() {
         movies = new ArrayList<>();
     }
 
+    //interface for listening of reach the and of list
+    interface OnReachEndListener {
+        void onReachEnd();
+    }
+
+    public void setOnReachEndListener(OnReachEndListener onReachEndListener) {
+        this.onReachEndListener = onReachEndListener;
+    }
+
+    //interface for listening on click
     interface OnPosterClickListener {
         void onPosterClick(int position);
     }
@@ -53,8 +64,13 @@ public class MovieAdapter extends RecyclerView.Adapter<MovieAdapter.MovieViewHol
 
     @Override
     public void onBindViewHolder(@NonNull MovieViewHolder holder, int position) {
+
+        if (position > movies.size() - 4 && onReachEndListener != null) {
+            onReachEndListener.onReachEnd();
+        }
         Movie movie = movies.get(position);
         Picasso.get().load(movie.getPosterPath()).into(holder.imageViewSmallPoster);
+
 
     }
 
