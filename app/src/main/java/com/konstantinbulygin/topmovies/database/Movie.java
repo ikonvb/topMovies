@@ -1,7 +1,12 @@
 package com.konstantinbulygin.topmovies.database;
 
+import androidx.room.Entity;
+import androidx.room.PrimaryKey;
+
+@Entity(tableName = "movies")
 public class Movie {
 
+    @PrimaryKey
     private int id;
     private int voteCount;
     private String title;
