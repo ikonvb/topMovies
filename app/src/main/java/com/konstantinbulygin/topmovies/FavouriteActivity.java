@@ -14,6 +14,7 @@ import androidx.lifecycle.ViewModelProviders;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.konstantinbulygin.topmovies.adapters.MovieAdapter;
 import com.konstantinbulygin.topmovies.database.FavouriteMovies;
 import com.konstantinbulygin.topmovies.database.MainViewModel;
 import com.konstantinbulygin.topmovies.database.Movie;

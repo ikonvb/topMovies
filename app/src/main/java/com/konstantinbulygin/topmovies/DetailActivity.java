@@ -13,11 +13,23 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.lifecycle.ViewModelProviders;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
+import com.konstantinbulygin.topmovies.adapters.ReviewAdapter;
+import com.konstantinbulygin.topmovies.adapters.TrailerAdapter;
 import com.konstantinbulygin.topmovies.database.FavouriteMovies;
 import com.konstantinbulygin.topmovies.database.MainViewModel;
 import com.konstantinbulygin.topmovies.database.Movie;
+import com.konstantinbulygin.topmovies.database.Review;
+import com.konstantinbulygin.topmovies.database.Trailer;
+import com.konstantinbulygin.topmovies.utils.JSONUtils;
+import com.konstantinbulygin.topmovies.utils.NetworkUtils;
 import com.squareup.picasso.Picasso;
+
+import org.json.JSONObject;
+
+import java.util.List;
 
 public class DetailActivity extends AppCompatActivity {
 
@@ -33,6 +45,11 @@ public class DetailActivity extends AppCompatActivity {
     private Movie movie;
     private ImageView imageViewAddToFavorite;
     private FavouriteMovies favouriteMovie;
+
+    private RecyclerView recyclerViewTrailers;
+    private RecyclerView recyclerViewReviews;
+    private ReviewAdapter reviewAdapter;
+    private TrailerAdapter trailerAdapter;
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -100,6 +117,23 @@ public class DetailActivity extends AppCompatActivity {
             Toast.makeText(this, R.string.remove_from_favourite, Toast.LENGTH_SHORT).show();
         }
         setFavourite();
+
+        recyclerViewTrailers = findViewById(R.id.recyclerViewTrailers);
+        recyclerViewReviews = findViewById(R.id.recyclerViewReviews);
+        reviewAdapter = new ReviewAdapter();
+        trailerAdapter = new TrailerAdapter();
+        recyclerViewReviews.setLayoutManager(new LinearLayoutManager(this));
+        recyclerViewTrailers.setLayoutManager(new LinearLayoutManager(this));
+
+        recyclerViewReviews.setAdapter(reviewAdapter);
+        recyclerViewTrailers.setAdapter(trailerAdapter);
+        JSONObject jsonObjectTrailers = NetworkUtils.getJSONForVideo(movie.getId());
+        JSONObject jsonObjectReviews = NetworkUtils.getJSONForReviews(movie.getId());
+
+        List<Trailer> trailers = JSONUtils.getTrailerFromJSON(jsonObjectTrailers);
+        List<Review> reviews = JSONUtils.getReviewsFromJSON(jsonObjectReviews);
+        reviewAdapter.setReviews(reviews);
+        trailerAdapter.setTrailers(trailers);
     }
 
     private void setFavourite() {
