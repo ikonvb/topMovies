@@ -1,16 +1,25 @@
 package com.konstantinbulygin.topmovies;
 
+import android.content.Intent;
 import android.os.Bundle;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.CompoundButton;
 import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.lifecycle.LiveData;
+import androidx.lifecycle.Observer;
+import androidx.lifecycle.ViewModelProviders;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.konstantinbulygin.topmovies.database.MainViewModel;
 import com.konstantinbulygin.topmovies.database.Movie;
 import com.konstantinbulygin.topmovies.utils.JSONUtils;
 import com.konstantinbulygin.topmovies.utils.NetworkUtils;
@@ -18,6 +27,7 @@ import com.konstantinbulygin.topmovies.utils.NetworkUtils;
 import org.json.JSONObject;
 
 import java.util.ArrayList;
+import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -28,9 +38,37 @@ public class MainActivity extends AppCompatActivity {
     private TextView textViewTopRated;
 
     @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        MenuInflater inflater = getMenuInflater();
+        inflater.inflate(R.menu.main_menu, menu);
+        return super.onCreateOptionsMenu(menu);
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(@NonNull MenuItem item) {
+        int id = item.getItemId();
+
+        switch(id) {
+            case R.id.itemMain:
+                Intent intent1 = new Intent(this, MainActivity.class);
+                startActivity(intent1);
+                break;
+            case R.id.itemFavourite:
+                Intent intent2 = new Intent(this, FavouriteActivity.class);
+                startActivity(intent2);
+                break;
+        }
+        return super.onOptionsItemSelected(item);
+    }
+
+    private MainViewModel mainViewModel;
+
+    @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        mainViewModel = ViewModelProviders.of(this).get(MainViewModel.class);
 
         textViewPopularity = findViewById(R.id.textViewPopularity);
         textViewTopRated = findViewById(R.id.textViewTopRated);
@@ -56,7 +94,10 @@ public class MainActivity extends AppCompatActivity {
         adapter.setOnPosterClickListener(new MovieAdapter.OnPosterClickListener() {
             @Override
             public void onPosterClick(int position) {
-                Toast.makeText(MainActivity.this, "RoooooMa" + position, Toast.LENGTH_SHORT).show();
+               Movie movie = adapter.getMovies().get(position);
+                Intent intent = new Intent(MainActivity.this, DetailActivity.class);
+                intent.putExtra("id", movie.getId());
+                startActivity(intent);
             }
         });
 
@@ -64,6 +105,14 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onReachEnd() {
                 Toast.makeText(MainActivity.this, "sdasdasdasdasd", Toast.LENGTH_SHORT).show();
+            }
+        });
+
+        LiveData<List<Movie>> moviesFromLiveData = mainViewModel.getMovies();
+        moviesFromLiveData.observe(this, new Observer<List<Movie>>() {
+            @Override
+            public void onChanged(List<Movie> movies) {
+                adapter.setMovies(movies);
             }
         });
     }
@@ -94,9 +143,21 @@ public class MainActivity extends AppCompatActivity {
             textViewPopularity.setTextColor(getResources().getColor(R.color.colorAccent));
         }
 
-        JSONObject jsonObject = NetworkUtils.getJSONFromNetwork(methodOfSort, 1);
+        downloadData(methodOfSort, 1);
+
+    }
+
+    private void downloadData(int methodOfSOrt, int page) {
+        JSONObject jsonObject = NetworkUtils.getJSONFromNetwork(methodOfSOrt, page);
         ArrayList<Movie> movies = JSONUtils.getMoviesFromJSON(jsonObject);
-        adapter.setMovies(movies);
+
+        if (movies != null && !movies.isEmpty()) {
+            mainViewModel.deleteAllMovies();
+
+            for (Movie movie : movies) {
+                mainViewModel.insertMovie(movie);
+            }
+        }
     }
 
 }

@@ -3,4 +3,13 @@
     <string name="poster_to_movie">Poster to movie</string>
     <string name="top_rated">Top rated</string>
     <string name="popularity">Popularity</string>
+    <string name="title">Title:</string>
+    <string name="original_title">Original title:</string>
+    <string name="rating">Rating:</string>
+    <string name="release_date">Release date:</string>
+    <string name="description">Overview:</string>
+    <string name="add_to_favourite">Added to favourite</string>
+    <string name="remove_from_favourite">Deleted from favourite</string>
+    <string name="main">Main</string>
+    <string name="favourite">Favourite</string>
 </resources>

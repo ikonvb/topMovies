@@ -39,7 +39,7 @@ public class NetworkUtils {
 
     //list of params for query with values
     private static final String API_KEY = "04c7da1b576ba3df53d95260684498af";
-    private static final String LANGUAGE_VALUES = "en-Us";
+    private static final String LANGUAGE_VALUES = "ru-Ru";
     private static final String SORT_BY_POPULARITY = "popularity.desc";
     private static final String SORT_BY_TOP_RATED = "vote_average.desc";
 
