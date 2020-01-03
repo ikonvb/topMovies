@@ -1,12 +1,14 @@
 package com.konstantinbulygin.topmovies;
 
 import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.ImageView;
+import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -30,6 +32,7 @@ import com.squareup.picasso.Picasso;
 import org.json.JSONObject;
 
 import java.util.List;
+import java.util.Locale;
 
 public class DetailActivity extends AppCompatActivity {
 
@@ -50,6 +53,9 @@ public class DetailActivity extends AppCompatActivity {
     private RecyclerView recyclerViewReviews;
     private ReviewAdapter reviewAdapter;
     private TrailerAdapter trailerAdapter;
+
+    private ScrollView scrollViewInfo;
+    private String lang;
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -80,6 +86,8 @@ public class DetailActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_detail);
 
+        lang = Locale.getDefault().getLanguage();
+
         imageViewAddToFavorite = findViewById(R.id.imageViewAddToFavorite);
         imageViewBigPoster = findViewById(R.id.imageViewBigPoster);
         textViewTitle = findViewById(R.id.textViewTitle);
@@ -87,6 +95,7 @@ public class DetailActivity extends AppCompatActivity {
         textViewRating = findViewById(R.id.textViewRating);
         textViewReleaseDate = findViewById(R.id.textViewReleaseDate);
         textViewOverview = findViewById(R.id.textViewOverview);
+        scrollViewInfo = findViewById(R.id.scrollViewInfo);
 
         Intent intent = getIntent();
 
@@ -104,6 +113,7 @@ public class DetailActivity extends AppCompatActivity {
         textViewRating.setText(Double.toString(movie.getVoteAverage()));
         textViewReleaseDate.setText(movie.getReleaseDate());
         textViewOverview.setText(movie.getOverview());
+        scrollViewInfo.smoothScrollTo(0,0);
         setFavourite();
     }
 
@@ -122,13 +132,21 @@ public class DetailActivity extends AppCompatActivity {
         recyclerViewReviews = findViewById(R.id.recyclerViewReviews);
         reviewAdapter = new ReviewAdapter();
         trailerAdapter = new TrailerAdapter();
+
+        trailerAdapter.setOnTrailerClickListener(new TrailerAdapter.OnTrailerClickListener() {
+            @Override
+            public void onTrailerClick(String url) {
+                Intent intentToTrailer = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
+                startActivity(intentToTrailer);
+            }
+        });
         recyclerViewReviews.setLayoutManager(new LinearLayoutManager(this));
         recyclerViewTrailers.setLayoutManager(new LinearLayoutManager(this));
 
         recyclerViewReviews.setAdapter(reviewAdapter);
         recyclerViewTrailers.setAdapter(trailerAdapter);
-        JSONObject jsonObjectTrailers = NetworkUtils.getJSONForVideo(movie.getId());
-        JSONObject jsonObjectReviews = NetworkUtils.getJSONForReviews(movie.getId());
+        JSONObject jsonObjectTrailers = NetworkUtils.getJSONForVideo(movie.getId(), lang);
+        JSONObject jsonObjectReviews = NetworkUtils.getJSONForReviews(movie.getId(), lang);
 
         List<Trailer> trailers = JSONUtils.getTrailerFromJSON(jsonObjectTrailers);
         List<Review> reviews = JSONUtils.getReviewsFromJSON(jsonObjectReviews);

@@ -2,20 +2,24 @@ package com.konstantinbulygin.topmovies;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.util.DisplayMetrics;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.CompoundButton;
+import android.widget.ProgressBar;
 import android.widget.Switch;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModelProviders;
+import androidx.loader.app.LoaderManager;
+import androidx.loader.content.Loader;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -27,16 +31,25 @@ import com.konstantinbulygin.topmovies.utils.NetworkUtils;
 
 import org.json.JSONObject;
 
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements LoaderManager.LoaderCallbacks<JSONObject> {
 
     private RecyclerView recyclerViewPosters;
     private MovieAdapter adapter;
     private Switch switchSort;
     private TextView textViewPopularity;
     private TextView textViewTopRated;
+    private static final int LOADER_ID = 133;
+    private LoaderManager loaderManager;
+    private static int page = 1;
+    private static boolean isLoading = false;
+    private int methodOfSort;
+    private ProgressBar progressBarLoading;
+    private String lang;
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -64,19 +77,32 @@ public class MainActivity extends AppCompatActivity {
 
     private MainViewModel mainViewModel;
 
+    private int getColumnCount() {
+        DisplayMetrics displayMetrics = new DisplayMetrics();
+        getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
+        int width = (int) (displayMetrics.widthPixels / displayMetrics.density);
+
+        return width / 185 > 2 ? width / 185 : 2;
+    }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        loaderManager = LoaderManager.getInstance(this);
+        progressBarLoading = findViewById(R.id.progressBarLoading);
 
         mainViewModel = ViewModelProviders.of(this).get(MainViewModel.class);
 
         textViewPopularity = findViewById(R.id.textViewPopularity);
         textViewTopRated = findViewById(R.id.textViewTopRated);
 
+        lang = Locale.getDefault().getLanguage();
+
         switchSort = findViewById(R.id.switchSort);
         recyclerViewPosters = findViewById(R.id.recyclerViewPosters);
-        recyclerViewPosters.setLayoutManager(new GridLayoutManager(this, 2));
+        recyclerViewPosters.setLayoutManager(new GridLayoutManager(this, getColumnCount()));
 
         adapter = new MovieAdapter();
         recyclerViewPosters.setAdapter(adapter);
@@ -86,7 +112,7 @@ public class MainActivity extends AppCompatActivity {
 
             @Override
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-
+                page = 1;
                 setMethodOfSort(isChecked);
             }
         });
@@ -105,7 +131,10 @@ public class MainActivity extends AppCompatActivity {
         adapter.setOnReachEndListener(new MovieAdapter.OnReachEndListener() {
             @Override
             public void onReachEnd() {
-                Toast.makeText(MainActivity.this, "sdasdasdasdasd", Toast.LENGTH_SHORT).show();
+                if (!isLoading) {
+                    downloadData(methodOfSort, page, lang);
+                }
+
             }
         });
 
@@ -113,7 +142,11 @@ public class MainActivity extends AppCompatActivity {
         moviesFromLiveData.observe(this, new Observer<List<Movie>>() {
             @Override
             public void onChanged(List<Movie> movies) {
-                adapter.setMovies(movies);
+
+                if (page == 1) {
+                    adapter.setMovies(movies);
+                }
+               // adapter.setMovies(movies);
             }
         });
     }
@@ -132,33 +165,68 @@ public class MainActivity extends AppCompatActivity {
 
     private void setMethodOfSort(boolean isTopRated) {
 
-        int methodOfSort;
-
         if (isTopRated) {
             methodOfSort = NetworkUtils.TOP_RATED;
             textViewTopRated.setTextColor(getResources().getColor(R.color.colorAccent));
             textViewPopularity.setTextColor(getResources().getColor(R.color.colorWhite));
+
         } else {
             methodOfSort = NetworkUtils.POPULARITY;
             textViewTopRated.setTextColor(getResources().getColor(R.color.colorWhite));
             textViewPopularity.setTextColor(getResources().getColor(R.color.colorAccent));
         }
 
-        downloadData(methodOfSort, 1);
+        downloadData(methodOfSort, page, lang);
 
     }
 
-    private void downloadData(int methodOfSOrt, int page) {
-        JSONObject jsonObject = NetworkUtils.getJSONFromNetwork(methodOfSOrt, page);
-        ArrayList<Movie> movies = JSONUtils.getMoviesFromJSON(jsonObject);
+    private void downloadData(int methodOfSOrt, int page, String lang) {
+       URL url = NetworkUtils.buildUrl(methodOfSOrt, page, lang);
+       Bundle bundle = new Bundle();
+       bundle.putString("url", url.toString());
+       loaderManager.restartLoader(LOADER_ID, bundle, this);
+    }
+
+    @NonNull
+    @Override
+    public Loader<JSONObject> onCreateLoader(int id, @Nullable Bundle args) {
+        NetworkUtils.JSONLoader jsonLoader = new NetworkUtils.JSONLoader(this, args);
+        jsonLoader.setOnStartLoadingListener(new NetworkUtils.JSONLoader.OnStartLoadingListener() {
+            @Override
+            public void onStartLoading() {
+                progressBarLoading.setVisibility(View.VISIBLE);
+                isLoading =true;
+            }
+        });
+        return jsonLoader;
+    }
+
+    @Override
+    public void onLoadFinished(@NonNull Loader<JSONObject> loader, JSONObject data) {
+        ArrayList<Movie> movies = JSONUtils.getMoviesFromJSON(data);
 
         if (movies != null && !movies.isEmpty()) {
+
+            if (page == 1) {
+                mainViewModel.deleteAllMovies();
+                adapter.clear();
+            }
             mainViewModel.deleteAllMovies();
 
             for (Movie movie : movies) {
                 mainViewModel.insertMovie(movie);
             }
+
+            adapter.addMovies(movies);
+            page++;
         }
+        isLoading = false;
+        progressBarLoading.setVisibility(View.INVISIBLE);
+        loaderManager.destroyLoader(LOADER_ID);
     }
 
+    @Override
+    public void onLoaderReset(@NonNull Loader<JSONObject> loader) {
+
+    }
 }
